@@ -1,0 +1,26 @@
+{
+  "name": "key-chain",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "bin": {
+    "key-chain": "./bin.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "p2p",
+    "key-chain",
+    "distributed"
+  ],
+  "author": "Tony Gorez <gorez.tony@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "autobase": "^1.0.0-alpha.0",
+    "chalk": "^4.1.2",
+    "corestore": "^6.0.0-alpha.4",
+    "hyperswarm": "^3.0.0",
+    "random-access-memory": "^3.1.2"
+  }
+}
