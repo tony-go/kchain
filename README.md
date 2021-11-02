@@ -5,8 +5,8 @@ Issue: the index generate by `autobase.createRebasedIndex` has a length of `1`. 
 Steps top reproduce my issue:
 
 - `npm i`
-- `node node examples/creator.js`
-- it should output:
+- `node examples/creator.js`
+- it should output (I add logs to help tracking the error):
 <details>
 <summary>Error here</summary>
 <code>
@@ -27,4 +27,3 @@ Error: Out of bounds
     at async file:///Users/tonygorez/projects/key-chain/examples/creator.js:11:1
 </code>
 </details>
--
