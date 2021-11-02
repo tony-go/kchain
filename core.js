@@ -25,15 +25,25 @@ export class KeyChain {
     });
   }
 
-  async ready() {
+  async ready(distantCoreKeys) {
     this.core = this.store.get({ name: "local" });
     this.autobaseIndex = this.store.get({ name: "index" });
     
     await this.core.ready();
 
     this.autobase = new Autobase([this.core], { indexes: this.autobaseIndex });
+
+    if (distantCoreKeys?.length) {
+      for await (const writer of distantCoreKeys) {
+        await this.autobase.addInput(this.store.get(Buffer.from(writer, 'hex')))
+      }
+    }
+
     await this.autobase.ready();
-    await this.autobase.append(JSON.stringify({}));
+
+    if (!distantCoreKeys) {
+      await this.autobase.append(JSON.stringify({}));
+    }
 
     this.swarm.join(Buffer.from(this.topic, "hex"));
     await this.swarm.flush();
@@ -42,10 +52,6 @@ export class KeyChain {
     await this.index.update();
 
     return this;
-  }
-
-  async fetchDistantCore(distantCoreKeys) {
-    // TODO
   }
 
   getConnectionInfo () {
