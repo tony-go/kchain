@@ -1,18 +1,23 @@
+import crypto from "crypto";
+
+import Autobase from "autobase";
 import HyperSwarm from "hyperswarm";
 
 /**
  * TODO:
- * - really use autobase
- * - try multiple writer
+ * - [x] really use autobase
+ * - [ ] try multiple writer
+ * - [ ] implement distant core
  * 
- * - have a '-e' option to export a key chain as a DOTENV file
+ * IDEAS:
+ * - [ ] have a '-e' option to export a key chain as a DOTENV file
  */
 
 export class KeyChain {
   constructor(name, options) {
     this.store = options.store;
-    this.autobase = options.autobase;
     this.name = name;
+    this.topic = sha256("key-chain");
 
     this.swarm = new HyperSwarm();
     this.swarm.on("connection", (connection) => {
@@ -21,53 +26,62 @@ export class KeyChain {
   }
 
   async ready() {
-    this.core = this.store.get({ name: "local", valueEncoding: "json" });
+    this.core = this.store.get({ name: "local" });
+    this.autobaseIndex = this.store.get({ name: "index" });
+    
     await this.core.ready();
 
-    this.swarm.join(this.core.discoveryKey);
+    this.autobase = new Autobase([this.core], { indexes: this.autobaseIndex });
+    await this.autobase.ready();
+    await this.autobase.append(JSON.stringify({}));
 
-    this.autobase.addInput(this.core);
-
-    return this;
-  }
-
-  async fetchDistantCore(distantCoreKey) {
-    this.core = this.store.get(Buffer.from(distantCoreKey, "hex"), { valueEncoding: "json" });
-    await this.core.ready();
-    console.log("core ready");
-
-    await this.autobase.addInput(this.core);
-    console.log("core added to autobase");
-
-    this.swarm.join(this.core.discoveryKey);
-    console.log("swarm joined");
-  
+    this.swarm.join(Buffer.from(this.topic, "hex"));
     await this.swarm.flush();
-    console.log("swarm flushed");
-    await this.core.update();
-    console.log("core updated");
+
+    this.index = this.autobase.createRebasedIndex();
+    await this.index.update();
 
     return this;
   }
 
-  getConnectionInfo() {
-    return this.core.key.toString("hex");
+  async fetchDistantCore(distantCoreKeys) {
+    // TODO
   }
 
-  async addKey(key, value) {
-    if (this.core.length) {
-      const currentKeyChain = await this.core.get(this.core.length - 1);
+  getConnectionInfo () {
+    return this.autobase.inputs.map(input => input.key.toString("hex"));
+  }
+
+  async addKey (key, value) {
+    if (this.index.length) {
+      const currentKeyChain = await this.lastChain()
       
       currentKeyChain[key] = value;
-      await this.core.append(currentKeyChain);
+  
+      await this.autobase.append(JSON.stringify(currentKeyChain));
     } else {
-      await this.core.append({ [key]: value });
+      await this.autobase.append(JSON.stringify({ [key]: value }));
     }
+
+    await this.index.update();
   }
 
   async all () {
-    const data = await this.core.get(this.core.length - 1);
-
-    return data instanceof Buffer ? JSON.parse(data.toString()) : data;
+    return await this.lastChain();
   }
+
+  async lastChain () {
+    const rawBuffer = await this.index.get(this.index.length - 1);
+    const stringValue = rawBuffer.value.toString();
+
+    return JSON.parse(stringValue);
+  }
+}
+
+/**
+ * HELPERS
+ */
+
+ function sha256 (inp) {
+  return crypto.createHash('sha256').update(inp).digest('hex')
 }
