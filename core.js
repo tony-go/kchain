@@ -41,15 +41,15 @@ export class KeyChain {
 
     await this.autobase.ready();
 
-    if (!distantCoreKeys) {
-      await this.autobase.append(JSON.stringify({}));
-    }
-
     this.swarm.join(Buffer.from(this.topic, "hex"));
     await this.swarm.flush();
 
     this.index = this.autobase.createRebasedIndex();
     await this.index.update();
+
+    console.log("LENGTH IS ALREADY ONE => ", this.index.length)
+    console.log("BUT WHEN I'M TRYING TO GET THE FIRST INDEX ...")
+    await this.index.get(0);
 
     return this;
   }
