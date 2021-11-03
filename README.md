@@ -10,20 +10,10 @@ Steps top reproduce my issue:
 <details>
 <summary>Error here</summary>
 <code>
-/Users/tonygorez/projects/key-chain/node_modules/compact-encoding/index.js:283
-      if (b.length !== n) throw new Error('Out of bounds')
-                                ^
+/Users/tonygorez/projects/key-chain/node_modules/compact-encoding/index.js:282
+      const b = state.buffer.subarray(state.start, state.start += n)
+                             ^
 
-Error: Out of bounds
-    at Object.decode (/Users/tonygorez/projects/key-chain/node_modules/compact-encoding/index.js:283:33)
-    at Object.decode (/Users/tonygorez/projects/key-chain/node_modules/autobase/lib/nodes/messages.js:95:25)
-    at Object.decode (/Users/tonygorez/projects/key-chain/node_modules/compact-encoding/index.js:376:14)
-    at Function.decode (/Users/tonygorez/projects/key-chain/node_modules/autobase/lib/nodes/index.js:119:26)
-    at RebasedHypercore._get (/Users/tonygorez/projects/key-chain/node_modules/autobase/lib/rebase.js:204:19)
-    at processTicksAndRejections (node:internal/process/task_queues:96:5)
-    at async RebasedHypercore.get (/Users/tonygorez/projects/key-chain/node_modules/autobase/lib/rebase.js:212:17)
-    at async KeyChain.lastChain (file:///Users/tonygorez/projects/key-chain/core.js:76:23)
-    at async KeyChain.addKey (file:///Users/tonygorez/projects/key-chain/core.js:59:31)
-    at async file:///Users/tonygorez/projects/key-chain/examples/creator.js:11:1
+TypeError: state.buffer.subarray is not a function
 </code>
 </details>
