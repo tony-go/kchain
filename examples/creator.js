@@ -4,6 +4,7 @@ import RAM from "random-access-memory";
 import { KeyChain } from "../core.js";
 
 const store = new Corestore(RAM);
+await store.ready();
 
 const keychain = await new KeyChain("restqa", { store })
   .ready();
