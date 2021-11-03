@@ -6,8 +6,9 @@ import HyperSwarm from "hyperswarm";
 /**
  * TODO:
  * - [x] really use autobase
- * - [ ] try multiple writer
- * - [ ] implement distant core
+ * - [x] try multiple writer
+ * - [ ] try multiple writer -> a write, b write, a read with b updates
+ * - [x] implement distant core
  * 
  * IDEAS:
  * - [ ] have a '-e' option to export a key chain as a DOTENV file
@@ -23,13 +24,12 @@ export class KeyChain {
     this.swarm.on("connection", (connection) => {
       this.store.replicate(connection);
     });
+    process.once('SIGINT', () => this.swarm.destroy()) // for faster restarts
   }
 
   async ready(distantCoreKeys) {
     this.core = this.store.get({ name: "local" });
     this.autobaseIndex = this.store.get({ name: "index" });
-    
-    await this.core.ready();
 
     this.autobase = new Autobase([this.core], { indexes: this.autobaseIndex });
 
@@ -38,8 +38,6 @@ export class KeyChain {
         await this.autobase.addInput(this.store.get(Buffer.from(writer, 'hex')))
       }
     }
-
-    await this.autobase.ready();
 
     if (!distantCoreKeys) {
       await this.autobase.append(JSON.stringify({}));
