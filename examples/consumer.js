@@ -9,6 +9,6 @@ const store = new Corestore(RAM);
 const keychain = await new KeyChain("rqa", { store })
   .ready([process.argv[2]]);
 
+await keychain.addKey("FOO", new Date().toDateString());
 console.log(await keychain.all());
-await keychain.addKey("FOO", "BAR");
-console.log(await keychain.all());
+console.log(await keychain.getConnectionInfo());
