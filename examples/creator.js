@@ -12,9 +12,9 @@ async function run () {
     
     // await keychain.addKey("GITHUB", "3828883");
     // await keychain.addKey("GITLAB", "DKDKSKSK");
-    await keychain.addKey('ZOOO', 'DJJZHDBDB')
+    await keychain.put('ZOOO', 'DJJZHDBDB')
     
-    console.log(await keychain.lastChain())
+    console.log(await keychain.last())
     console.log('public key', keychain.getConnectionInfo())
 }
 
