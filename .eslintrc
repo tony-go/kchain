@@ -1,0 +1,12 @@
+{
+  "env": {
+    "es2020": true
+  },
+  "rules": {
+    "semi": ["error", "never"],
+    "quotes": ["error", "single"]
+  },
+  "parserOptions": {
+    "sourceType": "module"
+  }
+}

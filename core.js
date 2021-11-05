@@ -1,7 +1,7 @@
-import crypto from "crypto";
+const crypto = require('crypto')
 
-import Autobase from "autobase";
-import HyperSwarm from "hyperswarm";
+const Autobase = require('autobase')
+const HyperSwarm = require('hyperswarm')
 
 /**
  * TODO:
@@ -9,76 +9,134 @@ import HyperSwarm from "hyperswarm";
  * - [x] try multiple writer
  * - [ ] try multiple writer -> a write, b write, a read with b updates
  * - [x] implement distant core
- * 
+ *
  * IDEAS:
  * - [ ] have a '-e' option to export a key chain as a DOTENV file
  */
 
-export class KeyChain {
-  constructor(name, options) {
-    this.store = options.store;
-    this.name = name;
-    this.topic = sha256("key-chain");
+// const kNamespaceDbPrefix = "POCKET_DB";
 
-    this.swarm = new HyperSwarm();
-    this.swarm.on("connection", (connection) => {
-      this.store.replicate(connection);
-    });
+// class Namespace {
+//   constructor(name = "default", options) {
+//     this.store = options.store;
+//     this.name = `${kNamespaceDbPrefix}-${name}`;
+
+//     this.coreDb = this.store.get({ name: this.name });
+//     this.db = null // add a bee here;
+//   }
+// }
+
+class KeyChain {
+  constructor (name, options) {
+    this.store = options.store
+    this.name = name
+    this.topic = sha256('key-chain')
+
+    this.swarm = new HyperSwarm()
     process.once('SIGINT', () => this.swarm.destroy()) // for faster restarts
   }
 
-  async ready(distantCoreKeys) {
-    this.core = this.store.get({ name: "local" });
-    this.autobaseIndex = this.store.get({ name: "index" });
+  async ready (distantCoreKeys) {
+    this.core = this.store.get({ name: this.name })
+    this.autobaseIndex = this.store.get({ name: 'index' })
 
-    this.autobase = new Autobase([this.core], { indexes: this.autobaseIndex });
+    this._listenOnSwarmConnection()
+
+    this.autobase = new Autobase([this.core], { indexes: this.autobaseIndex })
 
     if (distantCoreKeys?.length) {
       for await (const writer of distantCoreKeys) {
         await this.autobase.addInput(this.store.get(Buffer.from(writer, 'hex')))
+        console.log(`Key ${writer.slice(0, 5)} added !`)
       }
     }
 
-    if (!distantCoreKeys) {
-      await this.autobase.append(JSON.stringify({}));
+    if (!distantCoreKeys && !this.core.length) {
+      await this.autobase.append(JSON.stringify({}))
     }
 
-    this.swarm.join(Buffer.from(this.topic, "hex"));
-    await this.swarm.flush();
+    this.swarm.join(Buffer.from(this.topic, 'hex'))
+    await this.swarm.flush()
 
-    this.index = this.autobase.createRebasedIndex();
-    await this.index.update();
+    this.index = this.autobase.createRebasedIndex()
+    await this.index.update()
 
-    return this;
+    return this
+  }
+
+  // async open () {
+  //   // TODO: should look in the nameSpace
+  //   this.core = this.store.get({ name: this.name })
+  //   this.autobaseIndex = this.store.get({ name: 'index' })
+
+  //   this.autobase = new Autobase([this.core], { indexes: this.autobaseIndex })
+
+  //   this.swarm.join(Buffer.from(this.topic, 'hex'))
+  //   await this.swarm.flush()
+
+  //   this.index = this.autobase.createRebasedIndex()
+  //   await this.index.update()
+
+  //   return this
+  // }
+
+  async close () {
+    await this.swarm.destroy()
   }
 
   getConnectionInfo () {
-    return this.autobase.inputs.map(input => input.key.toString("hex"));
+    return this.core.key.toString('hex')
   }
 
-  async addKey (key, value) {
+  async put (key, value) {
     if (this.index.length) {
-      const currentKeyChain = await this.lastChain()
-      
-      currentKeyChain[key] = value;
-  
-      await this.autobase.append(JSON.stringify(currentKeyChain));
+      const currentKeyChain = await this.last()
+
+      currentKeyChain[key] = value
+
+      await this.autobase.append(JSON.stringify(currentKeyChain))
     } else {
-      await this.autobase.append(JSON.stringify({ [key]: value }));
+      await this.autobase.append(JSON.stringify({ [key]: value }))
     }
 
-    await this.index.update();
+    await this.index.update()
   }
 
-  async all () {
-    return await this.lastChain();
+  async last () {
+    const rawBuffer = await this.index.get(this.index.length - 1)
+    const stringValue = rawBuffer.value.toString()
+
+    return JSON.parse(stringValue)
   }
 
-  async lastChain () {
-    const rawBuffer = await this.index.get(this.index.length - 1);
-    const stringValue = rawBuffer.value.toString();
+  // Private
+  async _addNewWriter(connection) {
+    const newKey = connection.remotePublicKey.toString('hex')
+    const newWriter = this.store.get(Buffer.from(newKey, 'hex'))
+    await this.autobase.addInput(newWriter)
+    await this?.index?.update()
+  }
 
-    return JSON.parse(stringValue);
+  _listenOnSwarmConnection() {
+    this.swarm.on('connection', (connection) => {
+      this._debugIncomingPeer(connection)
+
+      this._addNewWriter(connection)
+
+      this.store.replicate(connection)
+    })
+  }
+
+  // Debug
+  _debugIncomingPeer(connection) {
+    if (process.env.DEBUG) {
+      console.debug({
+        name: this.name,
+        currentCore: this.getConnectionInfo(),
+        publicKey: connection.publicKey.toString('hex'),
+        remotePublicKey: connection.remotePublicKey.toString('hex')
+      })
+    }
   }
 }
 
@@ -86,6 +144,14 @@ export class KeyChain {
  * HELPERS
  */
 
- function sha256 (inp) {
+function sha256 (inp) {
   return crypto.createHash('sha256').update(inp).digest('hex')
+}
+
+/**
+ * EXPORTS
+ */
+
+ module.exports = {
+  KeyChain
 }

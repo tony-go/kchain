@@ -2,12 +2,16 @@
   "name": "key-chain",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
+  "type": "commonjs",
+  "main": "./core",
   "bin": {
     "key-chain": "./bin.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint:fix": "eslint . --fix",
+    "lint": "eslint .",
+    "clean": "rimraf temp",
+    "test": "npm run clean && tape test/*.js"
   },
   "keywords": [
     "p2p",
@@ -23,10 +27,9 @@
     "hyperswarm": "^3.0.0",
     "random-access-memory": "^3.1.2"
   },
-  "prettier": {
-    "trailingComma": "all",
-    "tabWidth": 2,
-    "semi": true,
-    "singleQuote": true
+  "devDependencies": {
+    "eslint": "^7.18.0",
+    "rimraf": "^3.0.2",
+    "tape": "^5.3.1"
   }
 }

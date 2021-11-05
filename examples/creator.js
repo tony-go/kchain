@@ -1,16 +1,21 @@
-import Corestore from "corestore";
-import RAM from "random-access-memory";
+const Corestore = require('corestore')
 
-import { KeyChain } from "../core.js";
+const { KeyChain } = require('../core.js')
 
-const store = new Corestore(RAM);
+const store = new Corestore('./temp/creator')
 
-const keychain = await new KeyChain("restqa", { store })
-  .ready();
+const newKey = process.argv[2]
 
-await keychain.addKey("GITHUB", "3828883");
-await keychain.addKey("GITLAB", "DKDKSKSK");
-await keychain.addKey("TWITTER", "DJJZHDBDB");
+async function run () {
+    const keychain = await new KeyChain('restqa', { store })
+        .ready(newKey ? [newKey] : undefined)
+    
+    // await keychain.addKey("GITHUB", "3828883");
+    // await keychain.addKey("GITLAB", "DKDKSKSK");
+    await keychain.addKey('ZOOO', 'DJJZHDBDB')
+    
+    console.log(await keychain.lastChain())
+    console.log('public key', keychain.getConnectionInfo())
+}
 
-console.log(await keychain.all());
-console.log("public key", keychain.getConnectionInfo());
+run()
